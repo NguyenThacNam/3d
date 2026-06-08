@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Thí nghiệm 3D · Khối đa diện</title>
+<style>
+  :root { color-scheme: dark; }
+  * { margin: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; background: #0b1020; font-family: system-ui, sans-serif; }
+  #app { position: fixed; inset: 0; }
+  .panel {
+    position: fixed; left: 16px; bottom: 16px; z-index: 10;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 10px 12px; border-radius: 14px;
+    background: rgba(20,24,48,0.7); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.12); color: #e6e9ff;
+  }
+  .panel button {
+    cursor: pointer; border: 1px solid rgba(255,255,255,0.15); border-radius: 9px;
+    padding: 7px 12px; font-weight: 700; font-size: 13px; color: #cbd5ff; background: transparent; transition: all .2s;
+  }
+  .panel button:hover { background: rgba(255,255,255,0.08); }
+  .panel button.active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+  .hint { position: fixed; top: 14px; left: 16px; z-index: 10; color: #aab0d8; font-size: 12px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="hint">Kéo để xoay · Cuộn để phóng to</div>
+<div class="panel" id="panel">
+  <button data-s="tetra">Tứ diện</button>
+  <button data-s="cube" class="active">Lập phương</button>
+  <button data-s="octa">Bát diện</button>
+  <button data-s="dodeca">Mười hai mặt</button>
+  <button data-s="icosa">Hai mươi mặt</button>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const app = document.getElementById('app');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b1020);
+
+const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.1, 100);
+camera.position.set(0, 1.5, 6);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+app.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+const l = new THREE.DirectionalLight(0xffffff, 1.3); l.position.set(4,6,5); scene.add(l);
+
+const geoms = {
+  tetra: () => new THREE.TetrahedronGeometry(1.6),
+  cube: () => new THREE.BoxGeometry(2.2, 2.2, 2.2),
+  octa: () => new THREE.OctahedronGeometry(1.7),
+  dodeca: () => new THREE.DodecahedronGeometry(1.7),
+  icosa: () => new THREE.IcosahedronGeometry(1.7),
+};
+
+let mesh, edges;
+function build(kind) {
+  if (mesh) { scene.remove(mesh); scene.remove(edges); }
+  const g = geoms[kind]();
+  mesh = new THREE.Mesh(g, new THREE.MeshStandardMaterial({
+    color: 0x6366f1, roughness: 0.35, metalness: 0.25,
+    transparent: true, opacity: 0.85, flatShading: true,
+  }));
+  edges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(g),
+    new THREE.LineBasicMaterial({ color: 0x4ade80 })
+  );
+  scene.add(mesh); scene.add(edges);
+}
+build('cube');
+
+const panel = document.getElementById('panel');
+panel.addEventListener('click', e => {
+  const btn = e.target.closest('button'); if (!btn) return;
+  [...panel.children].forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  build(btn.dataset.s);
+});
+
+function animate() {
+  requestAnimationFrame(animate);
+  if (mesh) { mesh.rotation.y += 0.006; mesh.rotation.x += 0.002; edges.rotation.copy(mesh.rotation); }
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>

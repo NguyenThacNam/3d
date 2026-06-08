@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Thí nghiệm 3D · Phân tử nước H₂O</title>
+<style>
+  :root { color-scheme: dark; }
+  * { margin: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; background: #07120f; font-family: system-ui, sans-serif; }
+  #app { position: fixed; inset: 0; }
+  .panel {
+    position: fixed; left: 16px; bottom: 16px; z-index: 10;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 12px 16px; border-radius: 14px;
+    background: rgba(10,30,24,0.7); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.12); color: #e6fff4;
+  }
+  .panel button {
+    cursor: pointer; border: 0; border-radius: 9px; padding: 7px 12px;
+    font-weight: 700; font-size: 13px; color: #fff; background: #16a34a; transition: background .2s;
+  }
+  .panel button:hover { background: #15803d; }
+  .panel button.off { background: #475569; }
+  .legend { display:flex; gap:14px; font-size:12px; font-weight:600; }
+  .dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; vertical-align:middle; }
+  .hint { position: fixed; top: 14px; left: 16px; z-index: 10; color: #9fd8c4; font-size: 12px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="hint">Kéo để xoay · Cuộn để phóng to</div>
+<div class="panel">
+  <button id="spin">Tự xoay: BẬT</button>
+  <span class="legend">
+    <span><span class="dot" style="background:#ef4444"></span>Oxy (O)</span>
+    <span><span class="dot" style="background:#e2e8f0"></span>Hydro (H)</span>
+    <span style="color:#9fd8c4">· Góc liên kết ≈ 104.5°</span>
+  </span>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const app = document.getElementById('app');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x07120f);
+
+const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.1, 100);
+camera.position.set(0, 1, 7);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+app.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+const l1 = new THREE.DirectionalLight(0xffffff, 1.2); l1.position.set(5,6,5); scene.add(l1);
+const l2 = new THREE.DirectionalLight(0x66ffcc, 0.5); l2.position.set(-5,-2,-3); scene.add(l2);
+
+const group = new THREE.Group();
+scene.add(group);
+
+function atom(radius, color, pos) {
+  const m = new THREE.Mesh(
+    new THREE.SphereGeometry(radius, 48, 48),
+    new THREE.MeshStandardMaterial({ color, roughness: 0.3, metalness: 0.2 })
+  );
+  m.position.copy(pos);
+  group.add(m);
+  return m;
+}
+function bond(a, b) {
+  const dirV = new THREE.Vector3().subVectors(b, a);
+  const len = dirV.length();
+  const cyl = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.12, 0.12, len, 20),
+    new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.6 })
+  );
+  cyl.position.copy(a).addScaledVector(dirV, 0.5);
+  cyl.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dirV.clone().normalize());
+  group.add(cyl);
+}
+
+// Vị trí: góc H–O–H ≈ 104.5°
+const half = THREE.MathUtils.degToRad(104.5/2);
+const d = 1.9;
+const O = new THREE.Vector3(0, 0, 0);
+const H1 = new THREE.Vector3(Math.sin(half)*d,  Math.cos(half)*d, 0);
+const H2 = new THREE.Vector3(-Math.sin(half)*d, Math.cos(half)*d, 0);
+
+bond(O, H1); bond(O, H2);
+atom(0.9, 0xef4444, O);
+atom(0.5, 0xe2e8f0, H1);
+atom(0.5, 0xe2e8f0, H2);
+group.position.y = -0.6;
+
+let spin = true;
+const btn = document.getElementById('spin');
+btn.addEventListener('click', () => {
+  spin = !spin;
+  btn.textContent = 'Tự xoay: ' + (spin ? 'BẬT' : 'TẮT');
+  btn.classList.toggle('off', !spin);
+});
+
+function animate() {
+  requestAnimationFrame(animate);
+  if (spin) group.rotation.y += 0.006;
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(python .claude/skills/ui-ux-pro-max/scripts/search.py \"component structure state routing performance\" --stack react -n 5)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:4173/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:4173/experiments/solar-system.htm)",
+      "Bash(curl -s http://localhost:4173/experiments/pendulum.htm)",
+      "Bash(kill %1)",
+      "Bash(python -m venv .venv)",
+      "Bash(./.venv/Scripts/python.exe -m pip install --upgrade pip -q)",
+      "Bash(./.venv/Scripts/python.exe -m pip install -r requirements.txt -q)",
+      "Bash(./.venv/Scripts/python.exe -c \"import app.main; print\\('OK: app imported,', len\\(app.main.app.routes\\), 'routes'\\)\")",
+      "Bash(./.venv/Scripts/python.exe -c \"import app.main; print\\('OK: app imported,', len\\([r for r in app.main.app.routes]\\), 'routes'\\)\")",
+      "Bash(./.venv/Scripts/python.exe _smoke.py)",
+      "Bash(PYTHONIOENCODING=utf-8 ./.venv/Scripts/python.exe _smoke.py)",
+      "Bash(./.venv/Scripts/python.exe -m pip install \"bcrypt==4.0.1\" -q)",
+      "Bash(rm -f src/data/courses.ts src/types.ts src/admin/data/adminData.ts)",
+      "Bash(rmdir src/data src/admin/data)",
+      "Bash(./.venv/Scripts/python.exe -c \"import secrets; print\\(secrets.token_urlsafe\\(48\\)\\)\")",
+      "Bash(PYTHONIOENCODING=utf-8 ./.venv/Scripts/python.exe -m app.seed)",
+      "Bash(mkdir -p uploads/experiments)",
+      "Bash(cp ../frontend/public/experiments/*.htm uploads/experiments/)",
+      "Bash(./.venv/Scripts/python.exe -c \"import app.main; print\\('OK routes:', len\\(app.main.app.routes\\)\\)\")",
+      "Bash(export DATABASE_URL=\"sqlite+pysqlite:///./_it.db\" SECRET_KEY=\"it\")",
+      "Bash(./.venv/Scripts/python.exe -m app.seed --reset)",
+      "Bash(./.venv/Scripts/python.exe -m uvicorn app.main:app --port 8012 --log-level warning)",
+      "Bash(curl -s -X POST http://localhost:8012/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"admin@3dlearning.vn\",\"password\":\"admin123\"}')"
+    ]
+  }
+}
