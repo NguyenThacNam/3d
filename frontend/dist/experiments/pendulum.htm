@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Thí nghiệm 3D · Con lắc đơn</title>
+<style>
+  :root { color-scheme: dark; }
+  * { margin: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; background: #0b1020; font-family: system-ui, sans-serif; }
+  #app { position: fixed; inset: 0; }
+  .panel {
+    position: fixed; left: 16px; bottom: 16px; z-index: 10;
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    padding: 12px 16px; border-radius: 14px;
+    background: rgba(20,24,48,0.7); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.12); color: #e6e9ff;
+  }
+  .panel label { font-size: 13px; font-weight: 600; display:flex; flex-direction:column; gap:4px; }
+  .panel input[type=range] { accent-color: #22c55e; cursor: pointer; }
+  .val { color:#22c55e; font-weight:700; }
+  .hint { position: fixed; top: 14px; left: 16px; z-index: 10; color: #aab0d8; font-size: 12px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="hint">Kéo để xoay · Cuộn để phóng to</div>
+<div class="panel">
+  <label>Chiều dài dây <span class="val" id="lenV">2.0 m</span>
+    <input id="len" type="range" min="1" max="4" step="0.1" value="2" />
+  </label>
+  <label>Biên độ <span class="val" id="ampV">35°</span>
+    <input id="amp" type="range" min="5" max="60" step="1" value="35" />
+  </label>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const app = document.getElementById('app');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b1020);
+
+const camera = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, 0.1, 100);
+camera.position.set(0, 1, 9);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+app.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.target.set(0, -1, 0);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+const dir = new THREE.DirectionalLight(0xffffff, 1.1);
+dir.position.set(4, 6, 5); scene.add(dir);
+
+// Giá đỡ
+const beam = new THREE.Mesh(
+  new THREE.BoxGeometry(5, 0.18, 0.18),
+  new THREE.MeshStandardMaterial({ color: 0x4f46e5 })
+);
+beam.position.y = 3.2; scene.add(beam);
+
+// Dây + quả nặng
+const pivot = new THREE.Vector3(0, 3.2, 0);
+const string = new THREE.Line(
+  new THREE.BufferGeometry().setFromPoints([pivot, new THREE.Vector3(0,0,0)]),
+  new THREE.LineBasicMaterial({ color: 0xaab0d8 })
+);
+scene.add(string);
+
+const bob = new THREE.Mesh(
+  new THREE.SphereGeometry(0.45, 32, 32),
+  new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.35, metalness: 0.3 })
+);
+scene.add(bob);
+
+// Vệt chuyển động
+const trailMat = new THREE.LineBasicMaterial({ color: 0x818cf8, transparent: true, opacity: 0.5 });
+const trailPts = [];
+let trail = new THREE.Line(new THREE.BufferGeometry(), trailMat);
+scene.add(trail);
+
+let L = 2.0, amp = THREE.MathUtils.degToRad(35);
+const g = 9.81;
+const lenEl = document.getElementById('len'), ampEl = document.getElementById('amp');
+lenEl.addEventListener('input', e => { L = +e.target.value; lenV.textContent = L.toFixed(1)+' m'; trailPts.length=0; });
+ampEl.addEventListener('input', e => { amp = THREE.MathUtils.degToRad(+e.target.value); ampV.textContent = e.target.value+'°'; trailPts.length=0; });
+
+const clock = new THREE.Clock();
+function animate() {
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+  const omega = Math.sqrt(g / L);
+  const theta = amp * Math.cos(omega * t);          // dao động điều hòa
+  const x = L * Math.sin(theta);
+  const y = 3.2 - L * Math.cos(theta);
+  bob.position.set(x, y, 0);
+  string.geometry.setFromPoints([pivot, bob.position.clone()]);
+
+  trailPts.push(new THREE.Vector3(x, y, 0));
+  if (trailPts.length > 120) trailPts.shift();
+  trail.geometry.setFromPoints(trailPts);
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>
