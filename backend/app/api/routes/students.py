@@ -7,7 +7,13 @@ from app.core.database import get_db
 from app.models.enums import Role
 from app.models.user import User
 from app.schemas.common import Page
-from app.schemas.people import StudentCreate, StudentImportResult, StudentOut, StudentUpdate
+from app.schemas.people import (
+    PasswordResetOut,
+    StudentCreate,
+    StudentImportResult,
+    StudentOut,
+    StudentUpdate,
+)
 from app.services.excel import build_template, parse_students
 from app.services.people_service import StudentService
 
@@ -39,6 +45,13 @@ def update_student(student_id: int, data: StudentUpdate, user: User = school_use
 @router.delete("/{student_id}", status_code=204)
 def delete_student(student_id: int, user: User = school_user, db: Session = Depends(get_db)):
     StudentService(db).delete(student_id)
+
+
+@router.post("/{student_id}/reset-password", response_model=PasswordResetOut)
+def reset_student_password(student_id: int, user: User = school_user, db: Session = Depends(get_db)):
+    """Đặt lại mật khẩu học sinh về mặc định (123456)."""
+    pw = StudentService(db).reset_password(student_id, get_scope_school_id(user))
+    return PasswordResetOut(password=pw)
 
 
 @router.get("/template")

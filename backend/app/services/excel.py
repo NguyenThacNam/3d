@@ -9,6 +9,7 @@ from app.schemas.people import StudentImportRow
 # Các tên cột có thể gặp (đã chuẩn hóa lower)
 NAME_COLS = {"họ tên", "ho ten", "họ và tên", "ho va ten", "name", "fullname", "tên"}
 EMAIL_COLS = {"email", "e-mail", "thư điện tử"}
+USERNAME_COLS = {"tên đăng nhập", "ten dang nhap", "username", "tài khoản", "tai khoan"}
 CLASS_COLS = {"lớp", "lop", "class", "classname", "tên lớp"}
 STATUS_COLS = {"trạng thái", "trang thai", "status"}
 
@@ -30,6 +31,7 @@ def parse_students(content: bytes) -> list[StudentImportRow]:
     headers = [str(h).strip().lower() if h is not None else "" for h in rows[0]]
     i_name = _find_index(headers, NAME_COLS)
     i_email = _find_index(headers, EMAIL_COLS)
+    i_username = _find_index(headers, USERNAME_COLS)
     i_class = _find_index(headers, CLASS_COLS)
     i_status = _find_index(headers, STATUS_COLS)
 
@@ -47,6 +49,7 @@ def parse_students(content: bytes) -> list[StudentImportRow]:
             StudentImportRow(
                 name=name,
                 email=cell(row, i_email) or None,
+                username=cell(row, i_username) or None,
                 className=cell(row, i_class) or None,
                 status=cell(row, i_status) or None,
             )
@@ -58,10 +61,10 @@ def build_template() -> bytes:
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "HocSinh"
-    ws.append(["Họ tên", "Email", "Lớp", "Trạng thái"])
-    ws.append(["Nguyễn Văn A", "a@hs.cva.edu.vn", "Lớp 10A1", "Đang học"])
-    ws.append(["Trần Thị B", "b@hs.cva.edu.vn", "Lớp 10A2", "Đang học"])
-    for col, width in zip("ABCD", (22, 26, 12, 12)):
+    ws.append(["Họ tên", "Email", "Tên đăng nhập", "Lớp", "Trạng thái"])
+    ws.append(["Nguyễn Văn A", "a@hs.cva.edu.vn", "", "Lớp 10A1", "Đang học"])
+    ws.append(["Trần Thị B", "", "tran.thi.b", "Lớp 10A2", "Đang học"])
+    for col, width in zip("ABCDE", (22, 26, 18, 12, 12)):
         ws.column_dimensions[col].width = width
     buf = io.BytesIO()
     wb.save(buf)

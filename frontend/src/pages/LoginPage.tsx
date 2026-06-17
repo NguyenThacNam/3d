@@ -23,7 +23,7 @@ export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -33,7 +33,7 @@ export default function LoginPage() {
     setBusy(true);
     setError(null);
     try {
-      const user = await login(email, password);
+      const user = await login(identifier, password);
       const from = (location.state as { from?: string } | null)?.from;
       navigate(from ?? HOME_BY_ROLE[user.roleCode], { replace: true });
     } catch (err) {
@@ -65,9 +65,9 @@ export default function LoginPage() {
           )}
           <div className="space-y-4">
             <div>
-              <label htmlFor="email" className="mb-1.5 block text-sm font-bold text-primary-800">Email</label>
-              <input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                className={field} placeholder="email@truong.edu.vn" autoComplete="username" />
+              <label htmlFor="identifier" className="mb-1.5 block text-sm font-bold text-primary-800">Email hoặc tên đăng nhập</label>
+              <input id="identifier" type="text" required value={identifier} onChange={(e) => setIdentifier(e.target.value)}
+                className={field} placeholder="email@truong.edu.vn hoặc tên đăng nhập" autoComplete="username" />
             </div>
             <div>
               <label htmlFor="password" className="mb-1.5 block text-sm font-bold text-primary-800">Mật khẩu</label>
@@ -87,7 +87,7 @@ export default function LoginPage() {
           <div className="grid grid-cols-2 gap-2">
             {DEMO.map((d) => (
               <button key={d.email} type="button"
-                onClick={() => { setEmail(d.email); setPassword(d.password); }}
+                onClick={() => { setIdentifier(d.email); setPassword(d.password); }}
                 className="rounded-lg border border-primary-100 px-3 py-2 text-left text-xs transition-colors hover:bg-primary-50 cursor-pointer">
                 <span className="block font-bold text-primary-800">{d.label}</span>
                 <span className="block truncate text-primary-500">{d.email}</span>

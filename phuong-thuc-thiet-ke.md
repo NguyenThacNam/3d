@@ -813,3 +813,281 @@ WHERE u.id = ?
 ## VII. Kết luận chương 3
 
 Chương 3 đã xây dựng thiết kế cơ sở dữ liệu chi tiết cho hệ thống học trực tuyến thí nghiệm 3D. Với các bảng, mối quan hệ, DDL mẫu và truy vấn chính, hệ thống đã có nền tảng để phát triển phần backend và lưu trữ dữ liệu hiệu quả.
+
+# Chương 4: Mô hình hóa hệ thống (UML)
+
+## I. Mục tiêu chương 4
+
+Chương 4 trực quan hóa hệ thống bằng các sơ đồ UML, giúp nhìn rõ chức năng theo từng vai trò và trình tự xử lý của các luồng quan trọng. Các sơ đồ được viết bằng Mermaid (tự hiển thị trên GitHub/VSCode) và phản ánh đúng hệ thống đã triển khai.
+
+## II. Sơ đồ Use Case tổng quan
+
+Bốn tác nhân (actor) và các chức năng chính tương ứng:
+
+```mermaid
+graph LR
+    admin([Admin hệ thống])
+    school([Quản trị trường])
+    teacher([Giáo viên])
+    student([Học sinh])
+
+    subgraph HT["Hệ thống học trực tuyến 3D"]
+        UC1[Đăng nhập]
+        UC2[Quản lý trường học]
+        UC3[Quản lý khóa học và bài học]
+        UC4[Quản lý thí nghiệm 3D]
+        UC5[Gán khóa học cho trường]
+        UC6[Quản lý lớp học]
+        UC7[Quản lý giáo viên]
+        UC8[Quản lý học sinh]
+        UC9[Gán khóa học cho lớp]
+        UC10[Xem khóa học được phép]
+        UC11[Xem bài học]
+        UC12[Mở thí nghiệm 3D trong iframe]
+    end
+
+    admin --- UC1
+    admin --- UC2
+    admin --- UC3
+    admin --- UC4
+    admin --- UC5
+
+    school --- UC1
+    school --- UC6
+    school --- UC7
+    school --- UC8
+    school --- UC9
+
+    teacher --- UC1
+    teacher --- UC10
+    teacher --- UC11
+
+    student --- UC1
+    student --- UC10
+    student --- UC11
+    student --- UC12
+```
+
+> Lưu ý: `school` chỉ gán được khóa học cho lớp (UC9) đối với khóa học đã được `admin` gán cho trường (UC5) — ràng buộc nghiệp vụ này được kiểm soát ở tầng dịch vụ.
+
+## III. Sơ đồ hoạt động (Activity)
+
+### 3.1. Đăng nhập và phân quyền theo role
+
+```mermaid
+flowchart TD
+    A([Bắt đầu]) --> B["Nhập email và mật khẩu"]
+    B --> C["Gửi yêu cầu đăng nhập"]
+    C --> D{"Thông tin hợp lệ?"}
+    D -- Không --> E["Báo lỗi đăng nhập"]
+    E --> B
+    D -- Có --> F["Cấp JWT, xác định role"]
+    F --> G{"Role là gì?"}
+    G -- admin --> H["Vào trang quản trị hệ thống"]
+    G -- school --> I["Vào trang quản trị trường"]
+    G -- teacher hoặc student --> J["Vào khu học tập"]
+    H --> Z([Kết thúc])
+    I --> Z
+    J --> Z
+```
+
+### 3.2. Admin quản lý và gán khóa học cho trường
+
+```mermaid
+flowchart TD
+    A([Bắt đầu]) --> B["Admin đăng nhập"]
+    B --> C["Tạo hoặc sửa khóa học"]
+    C --> D["Thêm bài học vào khóa học"]
+    D --> E["Gán thí nghiệm 3D cho bài học"]
+    E --> F["Chọn trường để gán khóa học"]
+    F --> G["Lưu vào school_courses"]
+    G --> H{"Còn trường cần gán?"}
+    H -- Có --> F
+    H -- Không --> Z([Kết thúc])
+```
+
+### 3.3. School gán khóa học cho lớp (có kiểm soát nghiệp vụ)
+
+```mermaid
+flowchart TD
+    A([Bắt đầu]) --> B["School đăng nhập, chọn lớp"]
+    B --> C["Chọn khóa học cần gán cho lớp"]
+    C --> D{"Khóa học đã được cấp cho trường?"}
+    D -- Chưa --> E["Bỏ qua khóa học đó"]
+    E --> C
+    D -- Rồi --> F["Lưu vào class_courses"]
+    F --> G["Học sinh trong lớp thấy khóa học"]
+    G --> Z([Kết thúc])
+```
+
+### 3.4. School quản lý học sinh
+
+```mermaid
+flowchart TD
+    A([Bắt đầu]) --> B["Mở trang quản lý học sinh"]
+    B --> C{"Chọn thao tác"}
+    C -- Thêm hoặc sửa --> D["Nhập thông tin, chọn lớp"]
+    D --> E{"Lớp thuộc trường này?"}
+    E -- Không --> F["Từ chối, báo lỗi"]
+    F --> B
+    E -- Có --> G["Lưu hồ sơ học sinh"]
+    C -- Xóa --> H["Xóa hồ sơ học sinh"]
+    G --> Z([Kết thúc])
+    H --> Z
+```
+
+### 3.5. Học sinh xem bài học và thí nghiệm 3D
+
+```mermaid
+flowchart TD
+    A([Bắt đầu]) --> B["Học sinh đăng nhập"]
+    B --> C["Xem danh sách khóa học của lớp"]
+    C --> D{"Lớp đã được gán khóa học?"}
+    D -- Không --> E["Hiển thị: chưa có nội dung"]
+    E --> Z([Kết thúc])
+    D -- Có --> F["Chọn khóa học"]
+    F --> G["Xem danh sách bài học theo thứ tự"]
+    G --> H["Chọn một bài học"]
+    H --> I{"Bài học có thí nghiệm 3D?"}
+    I -- Không --> J["Hiển thị: bài chưa có thí nghiệm"]
+    I -- Có --> K["Tải file HTML 3D vào iframe"]
+    K --> L["Tương tác mô hình 3D"]
+    J --> M["Điều hướng bài trước hoặc bài sau"]
+    L --> M
+    M --> Z
+```
+
+## IV. Sơ đồ tuần tự (Sequence)
+
+### 4.1. Đăng nhập và phân quyền theo role
+
+```mermaid
+sequenceDiagram
+    actor U as Người dùng
+    participant FE as Frontend (React)
+    participant API as Backend (FastAPI)
+    participant DB as PostgreSQL
+
+    U->>FE: Nhập email và mật khẩu
+    FE->>API: POST /api/auth/login
+    API->>DB: Truy vấn user theo email
+    DB-->>API: Bản ghi user (password_hash, role)
+    API->>API: Kiểm tra mật khẩu đã băm
+    alt Sai thông tin
+        API-->>FE: 401 Sai email hoặc mật khẩu
+        FE-->>U: Hiển thị lỗi đăng nhập
+    else Hợp lệ
+        API-->>FE: JWT token + thông tin role
+        FE->>FE: Lưu token, điều hướng theo role
+        FE-->>U: Vào trang phù hợp (admin/school/học tập)
+    end
+```
+
+### 4.2. Học sinh mở thí nghiệm 3D trong bài học
+
+```mermaid
+sequenceDiagram
+    actor S as Học sinh
+    participant FE as Frontend (React)
+    participant API as Backend (FastAPI)
+    participant DB as PostgreSQL
+    participant ST as Static /uploads
+
+    S->>FE: Chọn bài học
+    FE->>API: GET /api/learning/lessons/{id} (Bearer token)
+    API->>DB: Lấy bài học kèm thí nghiệm
+    DB-->>API: Lesson + Experiment (html_path)
+    API-->>FE: Dữ liệu bài học + đường dẫn thí nghiệm
+    FE->>ST: Tải iframe src = /uploads/experiments/...htm
+    ST-->>FE: Nội dung file HTML 3D
+    FE-->>S: Hiển thị mô hình 3D trong iframe
+```
+
+### 4.3. School gán khóa học cho lớp (có kiểm soát nghiệp vụ)
+
+```mermaid
+sequenceDiagram
+    actor SC as Quản trị trường
+    participant FE as Frontend (React)
+    participant API as Backend (FastAPI)
+    participant DB as PostgreSQL
+
+    SC->>FE: Chọn lớp và danh sách khóa học cần gán
+    FE->>API: PUT /api/classes/{id}/courses
+    API->>DB: Lấy lớp và các khóa học của trường
+    DB-->>API: school.courses (danh sách được phép)
+    API->>API: Lọc bỏ khóa học không thuộc trường
+    API->>DB: Cập nhật class_courses
+    DB-->>API: OK
+    API-->>FE: Danh sách khóa học đã gán
+    FE-->>SC: Cập nhật giao diện
+```
+
+### 4.4. Admin tạo khóa học và thêm bài học
+
+```mermaid
+sequenceDiagram
+    actor A as Admin
+    participant FE as Frontend (React)
+    participant API as Backend (FastAPI)
+    participant DB as PostgreSQL
+
+    A->>FE: Nhập thông tin khóa học
+    FE->>API: POST /api/courses
+    API->>DB: Tạo bản ghi course
+    DB-->>API: course_id
+    API-->>FE: Khóa học đã tạo
+    A->>FE: Thêm bài học và chọn thí nghiệm
+    FE->>API: POST /api/lessons
+    API->>DB: Tạo lesson (course_id, experiment_id)
+    DB-->>API: lesson_id
+    API-->>FE: Bài học đã thêm
+    FE-->>A: Cập nhật danh sách bài học
+```
+
+### 4.5. School thêm học sinh mới (kiểm tra lớp thuộc trường)
+
+```mermaid
+sequenceDiagram
+    actor SC as Quản trị trường
+    participant FE as Frontend (React)
+    participant API as Backend (FastAPI)
+    participant DB as PostgreSQL
+
+    SC->>FE: Nhập thông tin học sinh và chọn lớp
+    FE->>API: POST /api/students (Bearer token)
+    API->>DB: Kiểm tra lớp có thuộc trường không
+    DB-->>API: Kết quả kiểm tra
+    alt Lớp không thuộc trường
+        API-->>FE: 403 Không hợp lệ
+        FE-->>SC: Báo lỗi
+    else Hợp lệ
+        API->>DB: Tạo user và student_profile
+        DB-->>API: OK
+        API-->>FE: Học sinh đã tạo
+        FE-->>SC: Cập nhật danh sách
+    end
+```
+
+### 4.6. Admin quản lý và gán khóa học cho trường
+
+```mermaid
+sequenceDiagram
+    actor A as Admin
+    participant FE as Frontend (React)
+    participant API as Backend (FastAPI)
+    participant DB as PostgreSQL
+
+    A->>FE: Chọn trường và danh sách khóa học cần gán
+    FE->>API: PUT /api/schools/{id}/courses
+    API->>DB: Kiểm tra các khóa học tồn tại
+    DB-->>API: Danh sách khóa học hợp lệ
+    API->>DB: Cập nhật bảng school_courses
+    DB-->>API: OK
+    API-->>FE: Danh sách khóa học đã gán cho trường
+    FE-->>A: Cập nhật giao diện
+```
+
+## V. Kết luận chương 4
+
+Chương 4 đã mô hình hóa hệ thống qua sơ đồ use case tổng quát, 5 sơ đồ hoạt động và 6 sơ đồ tuần tự cho các luồng quan trọng: đăng nhập và phân quyền, quản lý và gán khóa học (cấp hệ thống và cấp trường), quản lý học sinh, cùng luồng học tập và mở thí nghiệm 3D. Các sơ đồ này khớp với phần phân tích nghiệp vụ ở Chương 1–2 và thiết kế dữ liệu ở Chương 3, tạo thành bộ tài liệu thiết kế thống nhất.

@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 
-from app.core.exceptions import ConflictError
+from app.core.exceptions import AuthError, ConflictError
+from app.core.security import hash_password, verify_password
 from app.models.enums import Role
 from app.models.user import User
 from app.repositories.user_repo import UserRepository
@@ -33,3 +34,11 @@ class ProfileService:
         self.users.commit()
         self.db.refresh(user)
         return profile_out(user)
+
+    def change_password(self, user: User, current_password: str, new_password: str) -> None:
+        if not verify_password(current_password, user.password_hash):
+            raise AuthError("Mật khẩu hiện tại không đúng.")
+        if verify_password(new_password, user.password_hash):
+            raise ConflictError("Mật khẩu mới phải khác mật khẩu hiện tại.")
+        user.password_hash = hash_password(new_password)
+        self.users.commit()

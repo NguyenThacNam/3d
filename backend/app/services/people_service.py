@@ -3,7 +3,7 @@ from __future__ import annotations
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.core.exceptions import ConflictError, NotFoundError
+from app.core.exceptions import AppError, ConflictError, NotFoundError
 from app.core.security import hash_password
 from app.models.classroom import Classroom
 from app.models.enums import Role, StudentStatus
@@ -24,8 +24,40 @@ from app.schemas.people import (
 )
 from app.services.pagination import page_count, paginate
 from app.services.serializers import student_out, teacher_out
+from app.services.usernames import (
+    is_valid_username,
+    normalize_username,
+    slugify_username,
+    unique_username,
+)
 
 DEFAULT_PASSWORD = "123456"
+
+INVALID_USERNAME_MSG = (
+    "Tên đăng nhập chỉ gồm chữ thường, số và . _ - (tối thiểu 3 ký tự, không chứa @)."
+)
+
+
+def resolve_username(users: UserRepository, provided: str | None, name: str) -> str:
+    """Trả về username hợp lệ, duy nhất. Tự sinh từ họ tên nếu không nhập."""
+    if provided and provided.strip():
+        u = normalize_username(provided)
+        if not is_valid_username(u):
+            raise AppError(INVALID_USERNAME_MSG)
+        if users.get_by_username(u):
+            raise ConflictError("Tên đăng nhập đã tồn tại.")
+        return u
+    base = slugify_username(name)
+    return unique_username(base, lambda c: users.get_by_username(c) is not None)
+
+
+def check_new_email(users: UserRepository, email: str | None) -> str | None:
+    """Kiểm tra email chưa bị dùng. Trả về None nếu để trống."""
+    if not email:
+        return None
+    if users.get_by_email(email):
+        raise ConflictError("Email đã tồn tại.")
+    return email
 
 
 class TeacherService:
@@ -57,10 +89,11 @@ class TeacherService:
         return Page[TeacherOut](items=items, total=total, page=page, pageSize=page_size, pages=page_count(total, page_size))
 
     def create(self, school_id: int, data: TeacherCreate) -> TeacherOut:
-        if self.users.get_by_email(data.email):
-            raise ConflictError("Email đã tồn tại.")
+        email = check_new_email(self.users, data.email)
+        username = resolve_username(self.users, data.username, data.name)
         user = User(
-            email=data.email,
+            email=email,
+            username=username,
             password_hash=hash_password(data.password or DEFAULT_PASSWORD),
             full_name=data.name,
             role=Role.teacher,
@@ -79,9 +112,15 @@ class TeacherService:
             if t.user:
                 t.user.full_name = data.name
         if data.email is not None and t.user and data.email != t.user.email:
-            if self.users.get_by_email(data.email):
-                raise ConflictError("Email đã tồn tại.")
-            t.user.email = data.email
+            t.user.email = check_new_email(self.users, data.email)
+        if data.username is not None and t.user:
+            u = normalize_username(data.username)
+            if u != (t.user.username or ""):
+                if not is_valid_username(u):
+                    raise AppError(INVALID_USERNAME_MSG)
+                if self.users.get_by_username(u):
+                    raise ConflictError("Tên đăng nhập đã tồn tại.")
+                t.user.username = u
         if data.subject is not None:
             t.subject = data.subject
         self.teachers.commit()
@@ -135,11 +174,12 @@ class StudentService:
         return Page[StudentOut](items=items, total=total, page=page, pageSize=page_size, pages=page_count(total, page_size))
 
     def create(self, school_id: int, data: StudentCreate) -> StudentOut:
-        if self.users.get_by_email(data.email):
-            raise ConflictError("Email đã tồn tại.")
+        email = check_new_email(self.users, data.email)
+        username = resolve_username(self.users, data.username, data.name)
         cls = self._class_in_school(data.class_id, school_id)
         user = User(
-            email=data.email,
+            email=email,
+            username=username,
             password_hash=hash_password(data.password or DEFAULT_PASSWORD),
             full_name=data.name,
             role=Role.student,
@@ -165,9 +205,15 @@ class StudentService:
             if s.user:
                 s.user.full_name = data.name
         if data.email is not None and s.user and data.email != s.user.email:
-            if self.users.get_by_email(data.email):
-                raise ConflictError("Email đã tồn tại.")
-            s.user.email = data.email
+            s.user.email = check_new_email(self.users, data.email)
+        if data.username is not None and s.user:
+            u = normalize_username(data.username)
+            if u != (s.user.username or ""):
+                if not is_valid_username(u):
+                    raise AppError(INVALID_USERNAME_MSG)
+                if self.users.get_by_username(u):
+                    raise ConflictError("Tên đăng nhập đã tồn tại.")
+                s.user.username = u
         if data.class_id is not None:
             cls = self._class_in_school(data.class_id, school_id)
             s.classroom = cls
@@ -185,6 +231,16 @@ class StudentService:
             self.db.delete(user)
         self.students.commit()
 
+    def reset_password(self, student_id: int, school_id: int) -> str:
+        """Đặt lại mật khẩu học sinh về mặc định. Trả về mật khẩu mới."""
+        s = self._get(student_id)
+        if s.school_id != school_id:
+            raise NotFoundError("Không tìm thấy học sinh.")
+        if s.user:
+            s.user.password_hash = hash_password(DEFAULT_PASSWORD)
+        self.students.commit()
+        return DEFAULT_PASSWORD
+
     # ----- Nhập Excel hàng loạt -----
     def bulk_import(self, school_id: int, rows: list[StudentImportRow]) -> StudentImportResult:
         # map tên lớp (chữ thường) → Classroom trong trường
@@ -196,10 +252,24 @@ class StudentService:
         skipped = 0
         for row in rows:
             name = (row.name or "").strip()
-            email = (row.email or "").strip().lower()
-            if not name or not email or self.users.get_by_email(email):
+            if not name:
                 skipped += 1
                 continue
+            email = (row.email or "").strip().lower() or None
+            if email and self.users.get_by_email(email):
+                skipped += 1
+                continue
+            # username: nhập sẵn (kiểm tra hợp lệ + trùng) hoặc tự sinh từ tên
+            provided = (row.username or "").strip()
+            if provided:
+                username = normalize_username(provided)
+                if not is_valid_username(username) or self.users.get_by_username(username):
+                    skipped += 1
+                    continue
+            else:
+                username = unique_username(
+                    slugify_username(name), lambda c: self.users.get_by_username(c) is not None
+                )
             cls = classes.get((row.className or "").strip().lower())
             status = (
                 StudentStatus.inactive
@@ -208,6 +278,7 @@ class StudentService:
             )
             user = User(
                 email=email,
+                username=username,
                 password_hash=hash_password(DEFAULT_PASSWORD),
                 full_name=name,
                 role=Role.student,

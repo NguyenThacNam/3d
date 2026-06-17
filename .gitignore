@@ -23,7 +23,7 @@ backend/uploads/**
 
 # ===== Node / Frontend =====
 node_modules/
-dist/
+
 dist-ssr/
 .vite/
 *.tsbuildinfo
@@ -52,3 +52,5 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+deploy/**

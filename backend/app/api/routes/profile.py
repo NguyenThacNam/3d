@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user
 from app.core.database import get_db
 from app.models.user import User
-from app.schemas.profile import ProfileOut, ProfileUpdate
+from app.schemas.profile import PasswordChange, ProfileOut, ProfileUpdate
 from app.services.profile_service import ProfileService
 
 router = APIRouter(prefix="/profile", tags=["profile"])
@@ -22,3 +22,12 @@ def update_profile(
     db: Session = Depends(get_db),
 ):
     return ProfileService(db).update(user, data)
+
+
+@router.put("/password", status_code=204)
+def change_password(
+    data: PasswordChange,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    ProfileService(db).change_password(user, data.current_password, data.new_password)

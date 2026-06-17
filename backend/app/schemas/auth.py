@@ -1,10 +1,11 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 
 from app.schemas.profile import ProfileOut
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    # Định danh đăng nhập: email hoặc username
+    identifier: str
     password: str
 
 

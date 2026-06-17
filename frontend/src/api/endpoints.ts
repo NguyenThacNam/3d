@@ -25,8 +25,8 @@ function qs(p: PageParams): string {
 const ALL: PageParams = { page: 1, pageSize: 1000 };
 
 export const authApi = {
-  login: (email: string, password: string) =>
-    api.post<TokenResponse>('/auth/login', { email, password }),
+  login: (identifier: string, password: string) =>
+    api.post<TokenResponse>('/auth/login', { identifier, password }),
   me: () => api.get<Profile>('/auth/me'),
 };
 
@@ -34,6 +34,8 @@ export const profileApi = {
   get: () => api.get<Profile>('/profile'),
   update: (data: { name?: string; email?: string; phone?: string }) =>
     api.put<Profile>('/profile', data),
+  changePassword: (data: { current_password: string; new_password: string }) =>
+    api.put<void>('/profile/password', data),
 };
 
 export const learningApi = {
@@ -90,20 +92,21 @@ export const classApi = {
 export const teacherApi = {
   list: (p: PageParams) => api.get<Page<Teacher>>(`/teachers?${qs(p)}`),
   listAll: async () => (await api.get<Page<Teacher>>(`/teachers?${qs(ALL)}`)).items,
-  create: (d: { name: string; email: string; subject?: string }) =>
+  create: (d: { name: string; email?: string; username?: string; subject?: string }) =>
     api.post<Teacher>('/teachers', d),
-  update: (id: number, d: { name?: string; email?: string; subject?: string }) =>
+  update: (id: number, d: { name?: string; email?: string; username?: string; subject?: string }) =>
     api.put<Teacher>(`/teachers/${id}`, d),
   remove: (id: number) => api.del(`/teachers/${id}`),
 };
 
 export const studentApi = {
   list: (p: PageParams) => api.get<Page<Student>>(`/students?${qs(p)}`),
-  create: (d: { name: string; email: string; class_id?: number | null; status?: string }) =>
+  create: (d: { name: string; email?: string; username?: string; class_id?: number | null; status?: string }) =>
     api.post<Student>('/students', d),
-  update: (id: number, d: { name?: string; email?: string; class_id?: number | null; status?: string }) =>
+  update: (id: number, d: { name?: string; email?: string; username?: string; class_id?: number | null; status?: string }) =>
     api.put<Student>(`/students/${id}`, d),
   remove: (id: number) => api.del(`/students/${id}`),
+  resetPassword: (id: number) => api.post<{ password: string }>(`/students/${id}/reset-password`),
   import: (file: File) => api.upload<StudentImportResult>('/students/import', file),
   template: () => api.download('/students/template', 'mau-danh-sach-hoc-sinh.xlsx'),
 };

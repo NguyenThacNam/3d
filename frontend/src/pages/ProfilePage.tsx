@@ -16,6 +16,11 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const [pw, setPw] = useState({ current_password: '', new_password: '', confirm: '' });
+  const [pwSaved, setPwSaved] = useState(false);
+  const [pwError, setPwError] = useState<string | null>(null);
+  const [pwBusy, setPwBusy] = useState(false);
+
   if (!user) return null;
 
   const onChange = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,6 +40,38 @@ export default function ProfilePage() {
       setError(err instanceof Error ? err.message : 'Lưu thất bại');
     } finally {
       setBusy(false);
+    }
+  };
+
+  const onPwChange = (k: keyof typeof pw) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPw((s) => ({ ...s, [k]: e.target.value }));
+    setPwSaved(false);
+    setPwError(null);
+  };
+
+  const changePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwError(null);
+    if (pw.new_password.length < 6) {
+      setPwError('Mật khẩu mới tối thiểu 6 ký tự.');
+      return;
+    }
+    if (pw.new_password !== pw.confirm) {
+      setPwError('Mật khẩu nhập lại không khớp.');
+      return;
+    }
+    setPwBusy(true);
+    try {
+      await profileApi.changePassword({
+        current_password: pw.current_password,
+        new_password: pw.new_password,
+      });
+      setPw({ current_password: '', new_password: '', confirm: '' });
+      setPwSaved(true);
+    } catch (err) {
+      setPwError(err instanceof Error ? err.message : 'Đổi mật khẩu thất bại');
+    } finally {
+      setPwBusy(false);
     }
   };
 
@@ -91,6 +128,10 @@ export default function ProfilePage() {
               <input id="p-phone" className={field} value={form.phone} onChange={onChange('phone')} />
             </div>
             <div>
+              <label htmlFor="p-username" className="mb-1.5 block text-sm font-bold text-primary-800">Tên đăng nhập</label>
+              <input id="p-username" className={`${field} bg-primary-50 text-primary-500`} value={user.username || '—'} disabled />
+            </div>
+            <div>
               <label htmlFor="p-role" className="mb-1.5 block text-sm font-bold text-primary-800">Vai trò</label>
               <input id="p-role" className={`${field} bg-primary-50 text-primary-500`} value={user.role} disabled />
             </div>
@@ -108,6 +149,42 @@ export default function ProfilePage() {
             {saved && (
               <span className="inline-flex items-center gap-1.5 text-sm font-bold text-emerald-600">
                 <CheckIcon className="h-4 w-4" /> Đã lưu
+              </span>
+            )}
+          </div>
+        </form>
+
+        <form onSubmit={changePassword} className="rounded-2xl border border-primary-100 bg-white p-6 shadow-soft lg:col-span-2">
+          <h3 className="font-display text-base font-bold text-primary-900">Đổi mật khẩu</h3>
+          <p className="mt-1 text-sm text-primary-500">Nhập mật khẩu hiện tại và mật khẩu mới (tối thiểu 6 ký tự).</p>
+          {pwError && (
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700">
+              {pwError}
+            </div>
+          )}
+          <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div>
+              <label htmlFor="p-curpw" className="mb-1.5 block text-sm font-bold text-primary-800">Mật khẩu hiện tại</label>
+              <input id="p-curpw" type="password" autoComplete="current-password" className={field} value={pw.current_password} onChange={onPwChange('current_password')} required />
+            </div>
+            <div>
+              <label htmlFor="p-newpw" className="mb-1.5 block text-sm font-bold text-primary-800">Mật khẩu mới</label>
+              <input id="p-newpw" type="password" autoComplete="new-password" className={field} value={pw.new_password} onChange={onPwChange('new_password')} required />
+            </div>
+            <div>
+              <label htmlFor="p-confpw" className="mb-1.5 block text-sm font-bold text-primary-800">Nhập lại mật khẩu mới</label>
+              <input id="p-confpw" type="password" autoComplete="new-password" className={field} value={pw.confirm} onChange={onPwChange('confirm')} required />
+            </div>
+          </div>
+
+          <div className="mt-6 flex items-center gap-3">
+            <button type="submit" disabled={pwBusy}
+              className="rounded-xl bg-accent-500 px-5 py-2.5 text-sm font-bold text-white shadow-soft transition-colors hover:bg-accent-600 disabled:opacity-60 cursor-pointer">
+              {pwBusy ? 'Đang đổi…' : 'Đổi mật khẩu'}
+            </button>
+            {pwSaved && (
+              <span className="inline-flex items-center gap-1.5 text-sm font-bold text-emerald-600">
+                <CheckIcon className="h-4 w-4" /> Đã đổi mật khẩu
               </span>
             )}
           </div>

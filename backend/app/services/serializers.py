@@ -47,16 +47,18 @@ def profile_out(user: User) -> ProfileOut:
     else:
         org = user.school.name if user.school else "—"
 
+    identifier = user.email or user.username or ""
     return ProfileOut(
         id=user.id,
         roleCode=user.role.value,
-        name=user.full_name or user.email,
-        email=user.email,
+        name=user.full_name or identifier,
+        email=user.email or "",
+        username=user.username or "",
         role=ROLE_LABELS[user.role],
         org=org,
         phone=user.phone or "",
         joined=user.created_at.strftime("%m/%Y") if user.created_at else "",
-        initials=initials_of(user.full_name or "", user.email),
+        initials=initials_of(user.full_name or "", identifier),
     )
 
 
@@ -160,7 +162,8 @@ def teacher_out(t: TeacherProfile) -> TeacherOut:
     return TeacherOut(
         id=t.id,
         name=t.name,
-        email=t.user.email if t.user else "",
+        email=(t.user.email or "") if t.user else "",
+        username=(t.user.username or "") if t.user else "",
         subject=t.subject or "",
         classes=len(t.classes),
     )
@@ -170,7 +173,8 @@ def student_out(s: StudentProfile) -> StudentOut:
     return StudentOut(
         id=s.id,
         name=s.name,
-        email=s.user.email if s.user else "",
+        email=(s.user.email or "") if s.user else "",
+        username=(s.user.username or "") if s.user else "",
         className=s.classroom.name if s.classroom else "",
         class_id=s.class_id,
         status=s.status.value,

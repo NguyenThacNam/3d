@@ -11,19 +11,21 @@ export default function TeachersPage() {
       addLabel="Thêm giáo viên"
       modalTitle="giáo viên"
       load={(p) => teacherApi.list(p)}
-      onCreate={(v) => teacherApi.create({ name: v.name, email: v.email, subject: v.subject })}
-      onUpdate={(row, v) => teacherApi.update(row.id, { name: v.name, email: v.email, subject: v.subject })}
+      onCreate={(v) => teacherApi.create({ name: v.name, email: v.email || undefined, username: v.username || undefined, subject: v.subject })}
+      onUpdate={(row, v) => teacherApi.update(row.id, { name: v.name, email: v.email || undefined, username: v.username || undefined, subject: v.subject })}
       onDelete={(row) => teacherApi.remove(row.id)}
-      toForm={(r) => ({ name: r.name, email: r.email, subject: r.subject })}
+      toForm={(r) => ({ name: r.name, email: r.email, username: r.username, subject: r.subject })}
       columns={[
         { key: 'name', header: 'Họ tên', render: (r) => <span className="font-bold text-primary-900">{r.name}</span> },
-        { key: 'email', header: 'Email', className: 'hidden md:table-cell' },
+        { key: 'username', header: 'Tên đăng nhập', render: (r) => <span className="font-mono text-xs text-primary-700">{r.username}</span> },
+        { key: 'email', header: 'Email', className: 'hidden md:table-cell', render: (r) => r.email || '—' },
         { key: 'subject', header: 'Môn dạy', render: (r) => <Badge tone="indigo">{r.subject}</Badge> },
         { key: 'classes', header: 'Số lớp', render: (r) => <Badge tone="gray">{r.classes} lớp</Badge> },
       ]}
       fields={[
         { name: 'name', label: 'Họ tên', placeholder: 'VD: Nguyễn Văn An', required: true },
-        { name: 'email', label: 'Email', type: 'email', placeholder: 'gv@truong.edu.vn', required: true },
+        { name: 'username', label: 'Tên đăng nhập', placeholder: 'Để trống sẽ tự tạo từ họ tên' },
+        { name: 'email', label: 'Email (không bắt buộc)', type: 'email', placeholder: 'gv@truong.edu.vn — có thể bỏ trống' },
         { name: 'subject', label: 'Môn dạy', placeholder: 'VD: Vật lý' },
       ]}
     />

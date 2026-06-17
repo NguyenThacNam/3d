@@ -41,13 +41,14 @@ interface ResourcePageProps<T extends { id: number }> {
   toForm: (row: T) => Values;
   onImport?: (file: File) => Promise<{ created: number; skipped: number }>;
   onDownloadTemplate?: () => void;
+  extraActions?: (row: T) => React.ReactNode;
   pageSize?: number;
 }
 
 export default function ResourcePage<T extends { id: number }>(props: ResourcePageProps<T>) {
   const {
     title, subtitle, addLabel, modalTitle, columns, fields,
-    load, onCreate, onUpdate, onDelete, toForm, onImport, onDownloadTemplate, pageSize = 10,
+    load, onCreate, onUpdate, onDelete, toForm, onImport, onDownloadTemplate, extraActions, pageSize = 10,
   } = props;
 
   const [page, setPage] = useState(1);
@@ -184,6 +185,7 @@ export default function ResourcePage<T extends { id: number }>(props: ResourcePa
             empty={debouncedQ ? 'Không tìm thấy bản ghi phù hợp.' : 'Chưa có dữ liệu.'}
             actions={(row) => (
               <div className="flex justify-end gap-1.5">
+                {extraActions?.(row)}
                 <button onClick={() => openEdit(row)} aria-label="Sửa" className="grid h-8 w-8 place-items-center rounded-lg text-primary-500 transition-colors hover:bg-primary-50 hover:text-primary-700 cursor-pointer">
                   <EditIcon className="h-4 w-4" />
                 </button>

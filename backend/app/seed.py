@@ -34,6 +34,7 @@ def seed() -> None:
         # 1) Admin hệ thống
         db.add(User(
             email=settings.FIRST_ADMIN_EMAIL,
+            username="admin",
             password_hash=hash_password(settings.FIRST_ADMIN_PASSWORD),
             full_name="Quản trị viên hệ thống",
             role=Role.admin,
@@ -45,7 +46,7 @@ def seed() -> None:
         db.add(school)
         db.flush()
         db.add(User(
-            email="admin@cva.edu.vn", password_hash=hash_password(PW),
+            email="admin@cva.edu.vn", username="cva.admin", password_hash=hash_password(PW),
             full_name="Ban quản trị nhà trường", role=Role.school, school_id=school.id, phone="02438230001",
         ))
 
@@ -57,7 +58,7 @@ def seed() -> None:
         ]
         teachers: dict[str, TeacherProfile] = {}
         for name, email, subject in teachers_data:
-            u = User(email=email, password_hash=hash_password(PW), full_name=name, role=Role.teacher, school_id=school.id)
+            u = User(email=email, username=email.split("@")[0], password_hash=hash_password(PW), full_name=name, role=Role.teacher, school_id=school.id)
             db.add(u)
             tp = TeacherProfile(user=u, name=name, subject=subject, school_id=school.id)
             db.add(tp)
@@ -87,7 +88,7 @@ def seed() -> None:
             ("Ngô Thảo Linh", "linh.nt@hs.cva.edu.vn", "Lớp 11B1", StudentStatus.inactive),
         ]
         for name, email, class_name, status in students_data:
-            u = User(email=email, password_hash=hash_password(PW), full_name=name, role=Role.student, school_id=school.id)
+            u = User(email=email, username=email.split("@")[0], password_hash=hash_password(PW), full_name=name, role=Role.student, school_id=school.id)
             db.add(u)
             db.add(StudentProfile(user=u, name=name, school_id=school.id,
                                   class_id=classes[class_name].id, status=status))

@@ -5,6 +5,7 @@ export interface Profile {
   roleCode: RoleCode;
   name: string;
   email: string;
+  username: string;
   role: string;
   org: string;
   phone: string;
@@ -90,6 +91,7 @@ export interface Teacher {
   id: number;
   name: string;
   email: string;
+  username: string;
   subject: string;
   classes: number;
 }
@@ -98,6 +100,7 @@ export interface Student {
   id: number;
   name: string;
   email: string;
+  username: string;
   className: string;
   class_id: number | null;
   status: 'active' | 'inactive';

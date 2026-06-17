@@ -32,6 +32,15 @@ export const CubeIcon = (p: IconProps) => (
   </Base>
 );
 
+export const KeyIcon = (p: IconProps) => (
+  <Base {...p}>
+    <circle cx="7.5" cy="15.5" r="4.5" />
+    <path d="m10.7 12.3 8.3-8.3" />
+    <path d="m16 6 3 3" />
+    <path d="m19 3 2 2" />
+  </Base>
+);
+
 export const ArrowRightIcon = (p: IconProps) => (
   <Base {...p}>
     <path d="M5 12h14" />

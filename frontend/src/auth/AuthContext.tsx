@@ -6,7 +6,7 @@ import type { Profile } from '../api/types';
 interface AuthState {
   user: Profile | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<Profile>;
+  login: (identifier: string, password: string) => Promise<Profile>;
   logout: () => void;
   setUser: (u: Profile) => void;
 }
@@ -29,8 +29,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const res = await authApi.login(email, password);
+  const login = useCallback(async (identifier: string, password: string) => {
+    const res = await authApi.login(identifier, password);
     setToken(res.access_token);
     setUser(res.user);
     return res.user;
