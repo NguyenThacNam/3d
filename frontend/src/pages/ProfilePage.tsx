@@ -77,6 +77,9 @@ export default function ProfilePage() {
 
   const field =
     'w-full rounded-xl border border-primary-200 bg-white px-3.5 py-2.5 text-sm text-primary-900 placeholder:text-primary-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-200';
+  const lockedField = `${field} bg-primary-50 text-primary-500`;
+  // Học sinh & giáo viên: thông tin do trường quản lý, chỉ đổi được mật khẩu
+  const isLocked = user.roleCode === 'student' || user.roleCode === 'teacher';
 
   return (
     <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
@@ -117,15 +120,15 @@ export default function ProfilePage() {
           <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <label htmlFor="p-name" className="mb-1.5 block text-sm font-bold text-primary-800">Họ và tên</label>
-              <input id="p-name" className={field} value={form.name} onChange={onChange('name')} required />
+              <input id="p-name" className={isLocked ? lockedField : field} value={form.name} onChange={onChange('name')} disabled={isLocked} required={!isLocked} />
             </div>
             <div>
               <label htmlFor="p-email" className="mb-1.5 block text-sm font-bold text-primary-800">Email</label>
-              <input id="p-email" type="email" className={field} value={form.email} onChange={onChange('email')} required />
+              <input id="p-email" type="email" className={isLocked ? lockedField : field} value={form.email} onChange={onChange('email')} disabled={isLocked} required={!isLocked} />
             </div>
             <div>
               <label htmlFor="p-phone" className="mb-1.5 block text-sm font-bold text-primary-800">Số điện thoại</label>
-              <input id="p-phone" className={field} value={form.phone} onChange={onChange('phone')} />
+              <input id="p-phone" className={isLocked ? lockedField : field} value={form.phone} onChange={onChange('phone')} disabled={isLocked} />
             </div>
             <div>
               <label htmlFor="p-username" className="mb-1.5 block text-sm font-bold text-primary-800">Tên đăng nhập</label>
@@ -141,17 +144,21 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="mt-6 flex items-center gap-3">
-            <button type="submit" disabled={busy}
-              className="rounded-xl bg-accent-500 px-5 py-2.5 text-sm font-bold text-white shadow-soft transition-colors hover:bg-accent-600 disabled:opacity-60 cursor-pointer">
-              {busy ? 'Đang lưu…' : 'Lưu thay đổi'}
-            </button>
-            {saved && (
-              <span className="inline-flex items-center gap-1.5 text-sm font-bold text-emerald-600">
-                <CheckIcon className="h-4 w-4" /> Đã lưu
-              </span>
-            )}
-          </div>
+          {isLocked ? (
+            <p className="mt-6 text-sm text-primary-500">Thông tin tài khoản do nhà trường quản lý. Bạn chỉ có thể đổi mật khẩu bên dưới.</p>
+          ) : (
+            <div className="mt-6 flex items-center gap-3">
+              <button type="submit" disabled={busy}
+                className="rounded-xl bg-accent-500 px-5 py-2.5 text-sm font-bold text-white shadow-soft transition-colors hover:bg-accent-600 disabled:opacity-60 cursor-pointer">
+                {busy ? 'Đang lưu…' : 'Lưu thay đổi'}
+              </button>
+              {saved && (
+                <span className="inline-flex items-center gap-1.5 text-sm font-bold text-emerald-600">
+                  <CheckIcon className="h-4 w-4" /> Đã lưu
+                </span>
+              )}
+            </div>
+          )}
         </form>
 
         <form onSubmit={changePassword} className="rounded-2xl border border-primary-100 bg-white p-6 shadow-soft lg:col-span-2">

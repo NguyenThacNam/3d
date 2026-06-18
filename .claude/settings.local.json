@@ -20,7 +20,8 @@
       "Bash(powershell -Command 'Get-NetTCPConnection -LocalPort 8016 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }')",
       "Bash(./.venv/Scripts/python.exe -c \"import app.main; print\\('backend OK', len\\(app.main.app.routes\\), 'routes'\\)\")",
       "PowerShell(cd E:\\\\3D\\\\frontend; npx tsc -b 2>&1 | Select-Object -First 30; \"TSC exit: $LASTEXITCODE\")",
-      "PowerShell(cd E:\\\\3D\\\\frontend; npx tsc -b 2>&1 | Select-Object -First 40; \"TSC exit: $LASTEXITCODE\")"
+      "PowerShell(cd E:\\\\3D\\\\frontend; npx tsc -b 2>&1 | Select-Object -First 40; \"TSC exit: $LASTEXITCODE\")",
+      "PowerShell(cd E:\\\\3D\\\\frontend; npx tsc -b 2>&1 | Select-Object -First 20; \"TSC exit: $LASTEXITCODE\")"
     ]
   }
 }

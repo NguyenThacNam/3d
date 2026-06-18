@@ -5,6 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy.exc import IntegrityError, ProgrammingError
 
 import app.models  # noqa: F401  (đăng ký toàn bộ bảng vào Base.metadata)
 from app.api.router import api_router
@@ -18,7 +19,12 @@ UPLOAD_PATH = Path(settings.UPLOAD_DIR)
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     # Prototype: tự tạo bảng nếu chưa có. Production nên dùng Alembic migration.
-    Base.metadata.create_all(bind=engine)
+    # Chạy nhiều worker → khi DB mới, các worker có thể cùng lúc tạo schema/enum
+    # và đua nhau (CREATE TYPE trùng). Bắt lỗi để worker thua không bị chết.
+    try:
+        Base.metadata.create_all(bind=engine)
+    except (IntegrityError, ProgrammingError):
+        pass  # worker khác đã tạo schema đồng thời — bỏ qua
     (UPLOAD_PATH / "experiments").mkdir(parents=True, exist_ok=True)
     yield
 
