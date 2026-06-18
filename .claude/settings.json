@@ -27,7 +27,8 @@
       "Bash(export DATABASE_URL=\"sqlite+pysqlite:///./_it.db\" SECRET_KEY=\"it\")",
       "Bash(./.venv/Scripts/python.exe -m app.seed --reset)",
       "Bash(./.venv/Scripts/python.exe -m uvicorn app.main:app --port 8012 --log-level warning)",
-      "Bash(curl -s -X POST http://localhost:8012/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"admin@3dlearning.vn\",\"password\":\"admin123\"}')"
+      "Bash(curl -s -X POST http://localhost:8012/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"admin@3dlearning.vn\",\"password\":\"admin123\"}')",
+      "Bash(git check-ignore *)"
     ]
   }
 }

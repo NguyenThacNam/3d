@@ -54,3 +54,9 @@ Thumbs.db
 *.swp
 
 deploy/**
+
+# ===== Nội dung khóa học (file thí nghiệm) — đẩy qua scp, KHÔNG lên git =====
+Tiểu Học/
+Trung Học/
+THPT/
+tieuhoc
